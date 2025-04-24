@@ -1,4 +1,3 @@
-import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart,
@@ -12,6 +11,7 @@ import {
 import { Users, FileText, TrendingUp, AlertCircle, Eye } from "lucide-react";
 import { fetchStats } from "../lib/api";
 import { AdminPanel } from "../components/AdminPanel";
+import { AdManager } from "../components/AdManager";
 import { useAuth } from "../lib/AuthContext";
 
 function Dashboard() {
@@ -114,6 +114,9 @@ function Dashboard() {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Ad Manager */}
+      <AdManager />
 
       {/* Admin Panel - Only shown to admin users */}
       {user?.is_admin && <AdminPanel />}
