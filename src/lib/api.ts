@@ -6,15 +6,6 @@ import type {
   CarouselItem,
 } from "../types";
 
-// Tipo para arreglar el error de "title" en métricas
-type ArticleMetricWithArticle = {
-  views: number;
-  articles: {
-    id: string;
-    title: string;
-  };
-};
-
 // User Management
 export async function searchUsers(searchTerm: string) {
   const { data, error } = await supabase
@@ -44,7 +35,7 @@ export async function fetchStats(): Promise<DashboardStats> {
     { count: totalAuthors },
     { count: activeTickerItems },
     { count: activeCarouselItems },
-    metricsResult,
+    { data: metricsData },
   ] = await Promise.all([
     supabase.from("articles").select("*", { count: "exact", head: true }),
     supabase
@@ -74,23 +65,12 @@ export async function fetchStats(): Promise<DashboardStats> {
       .limit(5),
   ]);
 
-  const rawMetricsData = metricsResult.data;
-
-  const metricsData = (
-    Array.isArray(rawMetricsData)
-      ? rawMetricsData.map((m) => ({
-          views: m.views,
-          articles: Array.isArray(m.articles) ? m.articles[0] : m.articles,
-        }))
-      : []
-  ) as ArticleMetricWithArticle[];
-
   const totalViews =
     metricsData?.reduce((sum, metric) => sum + (metric.views || 0), 0) || 0;
 
   const visitedNews =
     metricsData?.map((metric) => ({
-      title: metric.articles?.title || "",
+      title: metric.articles?.[0]?.title || "",
       views: metric.views || 0,
     })) || [];
 
@@ -106,19 +86,30 @@ export async function fetchStats(): Promise<DashboardStats> {
 
 // Article Management
 export async function fetchArticles() {
-  const { data, error } = await supabase
+  const { data: articles, error: articlesError } = await supabase
     .from("articles")
-    .select(
-      `
-      *,
-      article_metrics(views),
-      users!articles_author_id_fkey(email)
-    `
-    )
+    .select("*")
     .order("created_at", { ascending: false });
 
-  if (error) throw error;
-  return data;
+  if (articlesError) throw articlesError;
+
+  // Fetch metrics separately
+  const { data: metrics, error: metricsError } = await supabase
+    .from("article_metrics")
+    .select("article_id, views");
+
+  if (metricsError) throw metricsError;
+
+  // Create a map of article_id to views
+  const metricsMap = new Map(
+    metrics?.map((m) => [m.article_id, m.views]) || []
+  );
+
+  // Combine articles with their metrics
+  return articles?.map((article) => ({
+    ...article,
+    article_metrics: [{ views: metricsMap.get(article.id) || 0 }],
+  }));
 }
 
 export async function createArticle(article: Partial<Article>) {
@@ -135,22 +126,71 @@ export async function createArticle(article: Partial<Article>) {
 }
 
 export async function updateArticle(id: string, updates: Partial<Article>) {
-  const { data, error } = await supabase
-    .from("articles")
-    .update(updates)
-    .eq("id", id)
-    .select()
-    .single();
+  try {
+    // First verify the article exists
+    const { data: existingArticle, error: checkError } = await supabase
+      .from("articles")
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
 
-  if (error) throw error;
-  return data;
+    if (checkError) throw checkError;
+    if (!existingArticle) throw new Error("Artículo no encontrado");
+
+    // Remove non-column fields from updates
+    const { article_metrics, users, ...articleUpdates } = updates;
+
+    // Perform the update
+    const { data, error } = await supabase
+      .from("articles")
+      .update(articleUpdates)
+      .eq("id", id)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error("Error al actualizar el artículo");
+
+    // Get the current metrics
+    const { data: metrics } = await supabase
+      .from("article_metrics")
+      .select("views")
+      .eq("article_id", id)
+      .maybeSingle();
+
+    return {
+      ...data,
+      article_metrics: [{ views: metrics?.views || 0 }],
+    };
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Error al actualizar el artículo: ${errorMessage}`);
+  }
 }
 
 export async function deleteArticle(id: string) {
-  const { error } = await supabase.from("articles").delete().eq("id", id);
+  try {
+    // First verify the article exists
+    const { data: existingArticle, error: checkError } = await supabase
+      .from("articles")
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
 
-  if (error) throw error;
-  return true;
+    if (checkError) throw checkError;
+    if (!existingArticle) throw new Error("Artículo no encontrado");
+
+    // Delete the article
+    const { error } = await supabase.from("articles").delete().eq("id", id);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Error al eliminar el artículo: ${errorMessage}`);
+  }
 }
 
 export async function incrementArticleViews(articleId: string) {

@@ -20,6 +20,18 @@ const CATEGORIES = [
   "Salud",
 ];
 
+// ✅ Nueva función para inicializar todos los campos con valores válidos
+const createInitialFormData = (article?: Article): Partial<Article> => ({
+  title: article?.title ?? "",
+  excerpt: article?.excerpt ?? "",
+  content: article?.content ?? "",
+  image_url: article?.image_url ?? "",
+  category: article?.category ?? "",
+  read_time: article?.read_time ?? "",
+  video_url: article?.video_url ?? "",
+  author_name: article?.author_name ?? "",
+});
+
 export function ArticleForm({
   article,
   onSuccess,
@@ -29,16 +41,7 @@ export function ArticleForm({
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<Partial<Article>>(
-    article || {
-      title: "",
-      excerpt: "",
-      content: "",
-      image_url: "",
-      category: "",
-      read_time: "",
-      video_url: "",
-      author_name: "",
-    }
+    createInitialFormData(article)
   );
 
   const mutation = useMutation({
