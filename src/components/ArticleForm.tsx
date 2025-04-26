@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createArticle, updateArticle } from "../lib/api";
 import type { Article } from "../types";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { Editor } from "@tinymce/tinymce-react";
 
 interface ArticleFormProps {
   article?: Article;
@@ -20,18 +21,6 @@ const CATEGORIES = [
   "Salud",
 ];
 
-// ✅ Nueva función para inicializar todos los campos con valores válidos
-const createInitialFormData = (article?: Article): Partial<Article> => ({
-  title: article?.title ?? "",
-  excerpt: article?.excerpt ?? "",
-  content: article?.content ?? "",
-  image_url: article?.image_url ?? "",
-  category: article?.category ?? "",
-  read_time: article?.read_time ?? "",
-  video_url: article?.video_url ?? "",
-  author_name: article?.author_name ?? "",
-});
-
 export function ArticleForm({
   article,
   onSuccess,
@@ -41,7 +30,16 @@ export function ArticleForm({
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<Partial<Article>>(
-    createInitialFormData(article)
+    article || {
+      title: "",
+      excerpt: "",
+      content: "",
+      image_url: "",
+      category: "",
+      read_time: "",
+      video_url: "",
+      author_name: "",
+    }
   );
 
   const mutation = useMutation({
@@ -75,6 +73,27 @@ export function ArticleForm({
       [e.target.name]: e.target.value,
     }));
   };
+
+  const handleEditorChange = (content: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      content,
+    }));
+  };
+
+  // Check if TinyMCE API key is available
+  const apiKey = import.meta.env.VITE_TINYMCE_API_KEY;
+  if (!apiKey) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center gap-2 text-yellow-600">
+        <AlertCircle className="h-5 w-5" />
+        <p>
+          TinyMCE API key is not configured. Please check your environment
+          variables.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -147,14 +166,40 @@ export function ArticleForm({
           >
             Contenido
           </label>
-          <textarea
-            id="content"
-            name="content"
+          <Editor
+            apiKey={apiKey}
             value={formData.content}
-            onChange={handleChange}
-            required
-            rows={6}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            onEditorChange={handleEditorChange}
+            init={{
+              height: 400,
+              menubar: true,
+              readonly: false,
+              inline: false,
+              plugins: [
+                "advlist",
+                "autolink",
+                "lists",
+                "link",
+                "charmap",
+                "preview",
+                "searchreplace",
+                "visualblocks",
+                "code",
+                "fullscreen",
+                "insertdatetime",
+                "table",
+                "code",
+                "help",
+                "wordcount",
+              ],
+              toolbar:
+                "undo redo | blocks | " +
+                "bold italic underline forecolor | alignleft aligncenter " +
+                "alignright alignjustify | bullist numlist outdent indent | " +
+                "removeformat | help",
+              content_style:
+                "body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; line-height: 1.6; }",
+            }}
           />
         </div>
 
