@@ -4,6 +4,7 @@ import { createArticle, updateArticle } from "../lib/api";
 import type { Article } from "../types";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Editor } from "@tinymce/tinymce-react";
+import { supabase } from "../lib/supabase";
 
 interface ArticleFormProps {
   article?: Article;
@@ -28,6 +29,7 @@ export function ArticleForm({
 }: ArticleFormProps) {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const [formData, setFormData] = useState<Partial<Article>>(
     article || {
@@ -81,7 +83,31 @@ export function ArticleForm({
     }));
   };
 
-  // Check if TinyMCE API key is available
+  const handleFileUpload = async (file: File) => {
+    setUploading(true);
+    const fileName = `${Date.now()}_${file.name}`;
+    const { data, error } = await supabase.storage
+      .from("articles-images")
+      .upload(fileName, file, { cacheControl: "3600", upsert: false });
+
+    if (error) {
+      setError("Error subiendo la imagen: " + error.message);
+      setUploading(false);
+      return;
+    }
+
+    const publicUrl = supabase.storage
+      .from("articles-images")
+      .getPublicUrl(data.path).data.publicUrl;
+
+    setFormData((prev) => ({
+      ...prev,
+      image_url: publicUrl,
+    }));
+
+    setUploading(false);
+  };
+
   const apiKey = import.meta.env.VITE_TINYMCE_API_KEY;
   if (!apiKey) {
     return (
@@ -104,181 +130,170 @@ export function ArticleForm({
         </div>
       )}
 
-      <div className="space-y-4">
-        <div>
-          <label
-            htmlFor="title"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Título
-          </label>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Título
+        </label>
+        <input
+          type="text"
+          name="title"
+          value={formData.title}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Extracto
+        </label>
+        <textarea
+          name="excerpt"
+          value={formData.excerpt}
+          onChange={handleChange}
+          rows={3}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Contenido
+        </label>
+        <Editor
+          apiKey={apiKey}
+          value={formData.content}
+          onEditorChange={handleEditorChange}
+          init={{
+            height: 300,
+            menubar: false,
+            plugins: [
+              "advlist",
+              "autolink",
+              "lists",
+              "link",
+              "image",
+              "charmap",
+              "preview",
+              "anchor",
+              "searchreplace",
+              "visualblocks",
+              "code",
+              "fullscreen",
+              "insertdatetime",
+              "media",
+              "table",
+              "code",
+              "help",
+              "wordcount",
+            ],
+            toolbar:
+              "undo redo | formatselect | bold italic backcolor | \
+               alignleft aligncenter alignright alignjustify | \
+               bullist numlist outdent indent | removeformat | help",
+          }}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Categoría
+        </label>
+        <select
+          name="category"
+          value={formData.category}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        >
+          <option value="">Seleccionar categoría</option>
+          {CATEGORIES.map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Tiempo de lectura (minutos)
+        </label>
+        <input
+          type="number"
+          name="read_time"
+          value={formData.read_time}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Video URL (opcional)
+        </label>
+        <input
+          type="url"
+          name="video_url"
+          value={formData.video_url}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Autor</label>
+        <input
+          type="text"
+          name="author_name"
+          value={formData.author_name}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Imagen de portada
+        </label>
+
+        <div className="flex items-center space-x-2 mt-1">
           <input
-            type="text"
-            id="title"
-            name="title"
-            value={formData.title}
+            type="url"
+            name="image_url"
+            value={formData.image_url}
             onChange={handleChange}
-            required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="O pega una URL de imagen"
+            className="flex-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
 
-        <div>
-          <label
-            htmlFor="author_name"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Nombre del Autor
-          </label>
+        <div className="mt-2">
           <input
-            type="text"
-            id="author_name"
-            name="author_name"
-            value={formData.author_name}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="excerpt"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Resumen
-          </label>
-          <textarea
-            id="excerpt"
-            name="excerpt"
-            value={formData.excerpt}
-            onChange={handleChange}
-            required
-            rows={2}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="content"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Contenido
-          </label>
-          <Editor
-            apiKey={apiKey}
-            value={formData.content}
-            onEditorChange={handleEditorChange}
-            init={{
-              height: 400,
-              menubar: true,
-              readonly: false,
-              inline: false,
-              plugins: [
-                "advlist",
-                "autolink",
-                "lists",
-                "link",
-                "charmap",
-                "preview",
-                "searchreplace",
-                "visualblocks",
-                "code",
-                "fullscreen",
-                "insertdatetime",
-                "table",
-                "code",
-                "help",
-                "wordcount",
-              ],
-              toolbar:
-                "undo redo | blocks | " +
-                "bold italic underline forecolor | alignleft aligncenter " +
-                "alignright alignjustify | bullist numlist outdent indent | " +
-                "removeformat | help",
-              content_style:
-                "body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; line-height: 1.6; }",
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileUpload(file);
             }}
           />
         </div>
 
-        <div>
-          <label
-            htmlFor="image_url"
-            className="block text-sm font-medium text-gray-700"
-          >
-            URL de la Imagen
-          </label>
-          <input
-            type="url"
-            id="image_url"
-            name="image_url"
-            value={formData.image_url}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
+        {uploading && (
+          <div className="text-sm text-blue-500 mt-1 flex items-center gap-1">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Subiendo imagen...
+          </div>
+        )}
 
-        <div>
-          <label
-            htmlFor="category"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Categoría
-          </label>
-          <select
-            id="category"
-            name="category"
-            value={formData.category}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          >
-            <option value="">Seleccionar categoría</option>
-            {CATEGORIES.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label
-            htmlFor="read_time"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Tiempo de Lectura (ej. "5 min")
-          </label>
-          <input
-            type="text"
-            id="read_time"
-            name="read_time"
-            value={formData.read_time}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="video_url"
-            className="block text-sm font-medium text-gray-700"
-          >
-            URL del Video (opcional)
-          </label>
-          <input
-            type="url"
-            id="video_url"
-            name="video_url"
-            value={formData.video_url || ""}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
+        {formData.image_url && (
+          <div className="mt-2">
+            <img
+              src={formData.image_url}
+              alt="Previsualización"
+              className="h-32 object-cover rounded-md"
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end gap-4">
@@ -286,7 +301,7 @@ export function ArticleForm({
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
           >
             Cancelar
           </button>
@@ -294,7 +309,7 @@ export function ArticleForm({
         <button
           type="submit"
           disabled={mutation.isPending}
-          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
         >
           {mutation.isPending ? (
             <>
