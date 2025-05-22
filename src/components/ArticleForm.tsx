@@ -219,7 +219,7 @@ export function ArticleForm({
           Tiempo de lectura (minutos)
         </label>
         <input
-          type="number"
+          type="text"
           name="read_time"
           value={formData.read_time}
           onChange={handleChange}
