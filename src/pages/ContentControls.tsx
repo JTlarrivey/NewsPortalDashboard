@@ -210,14 +210,16 @@ function ContentControls() {
   };
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-gray-900">Control de Contenido</h1>
+    <div className="space-y-8 px-4 md:px-8 lg:px-16">
+      <h1 className="text-2xl font-bold text-gray-900 text-center md:text-left">
+        Control de Contenido
+      </h1>
 
       {/* News Ticker Section */}
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
           <h2 className="text-xl font-semibold">Corredor de Noticias</h2>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={addTickerItem}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
@@ -228,7 +230,7 @@ function ContentControls() {
             <button
               onClick={handleTickerSave}
               disabled={tickerMutation.isPending}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
             >
               {tickerMutation.isPending ? (
                 <>
@@ -247,12 +249,16 @@ function ContentControls() {
 
         <div className="space-y-4">
           {tickerItems.map((item, index) => (
-            <div key={index} className="flex items-center gap-4">
-              <div className="flex flex-col gap-2">
+            <div
+              key={index}
+              className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
+            >
+              <div className="flex flex-row sm:flex-col gap-2 sm:gap-1">
                 <button
                   onClick={() => moveTickerItem(index, "up")}
                   disabled={index === 0}
                   className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                  aria-label="Mover hacia arriba"
                 >
                   <ArrowUp className="h-4 w-4" />
                 </button>
@@ -260,10 +266,12 @@ function ContentControls() {
                   onClick={() => moveTickerItem(index, "down")}
                   disabled={index === tickerItems.length - 1}
                   className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                  aria-label="Mover hacia abajo"
                 >
                   <ArrowDown className="h-4 w-4" />
                 </button>
               </div>
+
               <input
                 type="text"
                 value={item.text || ""}
@@ -272,8 +280,8 @@ function ContentControls() {
                   newItems[index].text = e.target.value;
                   setTickerItems(newItems);
                 }}
-                className="flex-1 px-3 py-2 border rounded-lg"
                 placeholder="Texto de la noticia"
+                className="flex-1 min-w-0 px-3 py-2 border rounded-lg"
               />
               <input
                 type="url"
@@ -283,12 +291,13 @@ function ContentControls() {
                   newItems[index].link = e.target.value;
                   setTickerItems(newItems);
                 }}
-                className="w-64 px-3 py-2 border rounded-lg"
                 placeholder="URL del link"
+                className="w-full sm:w-64 min-w-0 px-3 py-2 border rounded-lg"
               />
               <button
                 onClick={() => removeTickerItem(index)}
-                className="text-red-500 hover:text-red-700"
+                className="self-start text-red-500 hover:text-red-700 mt-1 sm:mt-0"
+                aria-label="Eliminar item"
               >
                 <Trash2 className="h-5 w-5" />
               </button>
@@ -299,9 +308,9 @@ function ContentControls() {
 
       {/* Carousel Section */}
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
           <h2 className="text-xl font-semibold">Carrusel de destacadas</h2>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={addCarouselItem}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
@@ -312,7 +321,7 @@ function ContentControls() {
             <button
               onClick={handleCarouselSave}
               disabled={carouselMutation.isPending}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
             >
               {carouselMutation.isPending ? (
                 <>
@@ -322,7 +331,7 @@ function ContentControls() {
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  Guardar cambios
+                  Guardar Cambios
                 </>
               )}
             </button>
@@ -331,12 +340,16 @@ function ContentControls() {
 
         <div className="space-y-4">
           {carouselItems.map((item, index) => (
-            <div key={index} className="flex items-center gap-4">
-              <div className="flex flex-col gap-2">
+            <div
+              key={index}
+              className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
+            >
+              <div className="flex flex-row sm:flex-col gap-2 sm:gap-1">
                 <button
                   onClick={() => moveCarouselItem(index, "up")}
                   disabled={index === 0}
                   className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                  aria-label="Mover hacia arriba"
                 >
                   <ArrowUp className="h-4 w-4" />
                 </button>
@@ -344,10 +357,12 @@ function ContentControls() {
                   onClick={() => moveCarouselItem(index, "down")}
                   disabled={index === carouselItems.length - 1}
                   className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                  aria-label="Mover hacia abajo"
                 >
                   <ArrowDown className="h-4 w-4" />
                 </button>
               </div>
+
               <select
                 value={item.article_id || ""}
                 onChange={(e) => {
@@ -355,18 +370,20 @@ function ContentControls() {
                   newItems[index].article_id = e.target.value;
                   setCarouselItems(newItems);
                 }}
-                className="flex-1 px-3 py-2 border rounded-lg"
+                className="flex-1 min-w-0 px-3 py-2 border rounded-lg"
               >
-                <option value="">Seleccionar Artículo</option>
+                <option value="">Seleccione un artículo</option>
                 {articles?.map((article: Article) => (
                   <option key={article.id} value={article.id}>
                     {article.title}
                   </option>
                 ))}
               </select>
+
               <button
                 onClick={() => removeCarouselItem(index)}
-                className="text-red-500 hover:text-red-700"
+                className="self-start text-red-500 hover:text-red-700 mt-1 sm:mt-0"
+                aria-label="Eliminar item"
               >
                 <Trash2 className="h-5 w-5" />
               </button>
