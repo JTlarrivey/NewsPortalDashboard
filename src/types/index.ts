@@ -4,7 +4,7 @@ export interface Article {
   title: string;
   excerpt: string;
   content: string;
-  image_url: string;
+  image_url: string[];
   category: string;
   author_id: string | null;
   author_name: string;
