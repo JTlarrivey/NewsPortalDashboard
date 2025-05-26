@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlusCircle, Edit, Trash2, AlertCircle, Loader2 } from "lucide-react";
 import { fetchArticles, deleteArticle } from "../lib/api";
@@ -36,6 +36,17 @@ function ArticleManager() {
   const handleCloseModal = () => {
     setSelectedArticle(undefined);
     setIsModalOpen(false);
+  };
+
+  const cleanImageUrl = (url: string | undefined) => {
+    if (!url) return "";
+
+    const trimmed = url.trim();
+    const cleaned = trimmed.replace(/^\{(.*)\}$/, "$1");
+
+    if (cleaned.startsWith("http")) return cleaned;
+
+    return `https://jrkvpvewrcsuphhyxovk.supabase.co/storage/v1/object/public/${cleaned}`;
   };
 
   if (isLoading) {
@@ -116,65 +127,75 @@ function ArticleManager() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {articles?.map((article: Article) => (
-                <tr key={article.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <img
-                        src={article.image_url}
-                        alt={article.title}
-                        className="h-10 w-10 rounded-lg object-cover mr-3"
-                      />
-                      <div className="truncate max-w-md">
-                        <p className="text-sm font-medium text-gray-900">
-                          {article.title}
-                        </p>
-                        <p className="text-sm text-gray-500 truncate">
-                          {article.excerpt}
-                        </p>
+              {articles?.map((article: Article) => {
+                const imageUrl = Array.isArray(article.image_url)
+                  ? cleanImageUrl(article.image_url[0])
+                  : cleanImageUrl(article.image_url);
+
+                return (
+                  <tr key={article.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <img
+                          src={imageUrl}
+                          alt={article.title}
+                          className="h-10 w-10 rounded-lg object-cover mr-3"
+                        />
+                        <div className="truncate max-w-md">
+                          <p className="text-sm font-medium text-gray-900">
+                            {article.title}
+                          </p>
+                          <p className="text-sm text-gray-500 truncate">
+                            {article.excerpt}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                      {article.category}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {article.author_name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {article.read_time}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {article.article_metrics?.[0]?.views || 0}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {format(new Date(article.created_at), "d 'de' MMMM, yyyy", {
-                      locale: es,
-                    })}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleOpenModal(article)}
-                        className="text-blue-600 hover:text-blue-900"
-                        title="Editar"
-                      >
-                        <Edit className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(article.id)}
-                        className="text-red-600 hover:text-red-900"
-                        disabled={deleteMutation.isPending}
-                        title="Eliminar"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                        {article.category}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {article.author_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {article.read_time}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {article.article_metrics?.[0]?.views || 0}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {format(
+                        new Date(article.created_at),
+                        "d 'de' MMMM, yyyy",
+                        {
+                          locale: es,
+                        }
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleOpenModal(article)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Editar"
+                        >
+                          <Edit className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(article.id)}
+                          className="text-red-600 hover:text-red-900"
+                          disabled={deleteMutation.isPending}
+                          title="Eliminar"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

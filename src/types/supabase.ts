@@ -16,7 +16,7 @@ export interface Database {
           title: string;
           excerpt: string;
           content: string;
-          image_url: string;
+          image_url: string[];
           category: string;
           author_id: string | null;
           read_time: string;
@@ -28,7 +28,7 @@ export interface Database {
           title: string;
           excerpt: string;
           content: string;
-          image_url: string;
+          image_url: string[];
           category: string;
           author_id?: string | null;
           read_time: string;
@@ -40,7 +40,7 @@ export interface Database {
           title?: string;
           excerpt?: string;
           content?: string;
-          image_url?: string;
+          image_url?: string[];
           category?: string;
           author_id?: string | null;
           read_time?: string;

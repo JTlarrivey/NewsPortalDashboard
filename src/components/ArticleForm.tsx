@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createArticle, updateArticle } from "../lib/api";
 import type { Article } from "../types";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, X } from "lucide-react";
 import { Editor } from "@tinymce/tinymce-react";
 import { supabase } from "../lib/supabase";
 
@@ -30,13 +30,14 @@ export function ArticleForm({
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [manualImageUrl, setManualImageUrl] = useState("");
 
   const [formData, setFormData] = useState<Partial<Article>>(
     article || {
       title: "",
       excerpt: "",
       content: "",
-      image_url: "",
+      image_url: [],
       category: "",
       read_time: "",
       video_url: "",
@@ -102,10 +103,27 @@ export function ArticleForm({
 
     setFormData((prev) => ({
       ...prev,
-      image_url: publicUrl,
+      image_url: [...(prev.image_url || []), publicUrl],
     }));
 
     setUploading(false);
+  };
+
+  const handleAddManualImage = () => {
+    if (manualImageUrl) {
+      setFormData((prev) => ({
+        ...prev,
+        image_url: [...(prev.image_url || []), manualImageUrl],
+      }));
+      setManualImageUrl("");
+    }
+  };
+
+  const handleRemoveImage = (urlToRemove: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      image_url: (prev.image_url || []).filter((url) => url !== urlToRemove),
+    }));
   };
 
   const apiKey = import.meta.env.VITE_TINYMCE_API_KEY;
@@ -183,14 +201,13 @@ export function ArticleForm({
               "insertdatetime",
               "media",
               "table",
-              "code",
               "help",
               "wordcount",
             ],
             toolbar:
-              "undo redo | formatselect | bold italic backcolor | \
-               alignleft aligncenter alignright alignjustify | \
-               bullist numlist outdent indent | removeformat | help",
+              "undo redo | formatselect | bold italic backcolor | " +
+              "alignleft aligncenter alignright alignjustify | " +
+              "bullist numlist outdent indent | removeformat | help",
           }}
         />
       </div>
@@ -253,27 +270,36 @@ export function ArticleForm({
 
       <div>
         <label className="block text-sm font-medium text-gray-700">
-          Imagen de portada
+          Imágenes del artículo
         </label>
 
-        <div className="flex items-center space-x-2 mt-1">
+        <div className="flex items-center gap-2 mt-1">
           <input
             type="url"
-            name="image_url"
-            value={formData.image_url}
-            onChange={handleChange}
-            placeholder="O pega una URL de imagen"
-            className="flex-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Pega una URL de imagen"
+            value={manualImageUrl}
+            onChange={(e) => setManualImageUrl(e.target.value)}
+            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           />
+          <button
+            type="button"
+            onClick={handleAddManualImage}
+            className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+          >
+            Agregar
+          </button>
         </div>
 
         <div className="mt-2">
           <input
             type="file"
             accept="image/*"
+            multiple
             onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleFileUpload(file);
+              const files = e.target.files;
+              if (files) {
+                Array.from(files).forEach((file) => handleFileUpload(file));
+              }
             }}
           />
         </div>
@@ -285,13 +311,24 @@ export function ArticleForm({
           </div>
         )}
 
-        {formData.image_url && (
-          <div className="mt-2">
-            <img
-              src={formData.image_url}
-              alt="Previsualización"
-              className="h-32 object-cover rounded-md"
-            />
+        {formData.image_url && formData.image_url.length > 0 && (
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+            {formData.image_url.map((url) => (
+              <div key={url} className="relative">
+                <img
+                  src={url}
+                  alt="Imagen subida"
+                  className="w-full h-32 object-cover rounded-md"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(url)}
+                  className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-gray-100"
+                >
+                  <X className="w-4 h-4 text-red-600" />
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>
